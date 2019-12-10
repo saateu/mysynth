@@ -1,22 +1,20 @@
 #include <iostream>
 #include <alsa/asoundlib.h>
 
-snd_pcm_t *pcm_handle; 
-snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
-snd_pcm_hw_params_t *hwparams;
-char *pcm_name;
-
 int main (int argc, char *argv[]) {
   int rate = 44100;
   unsigned exact_rate;
-  int dir;
   int periods = 2;
-  snd_pcm_uframes_t periodsize = 8192;
   int num_frames;
   unsigned char *data;
   int l1, l2;
   short s1, s2;
   int frames;
+  char *pcm_name;
+  snd_pcm_t *pcm_handle; 
+  snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
+  snd_pcm_hw_params_t *hwparams;
+  snd_pcm_uframes_t periodsize = 8192;
 
   std::cout << "Start my synth\n";
 

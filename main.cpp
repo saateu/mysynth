@@ -7,6 +7,17 @@ snd_pcm_hw_params_t *hwparams;
 char *pcm_name;
 
 int main (int argc, char *argv[]) {
+  int rate = 44100;
+  unsigned exact_rate;
+  int dir;
+  int periods = 2;
+  snd_pcm_uframes_t periodsize = 8192;
+  int num_frames;
+  unsigned char *data;
+  int l1, l2;
+  short s1, s2;
+  int frames;
+
   std::cout << "Start my synth\n";
 
   pcm_name = argv[1];
@@ -22,13 +33,6 @@ int main (int argc, char *argv[]) {
     std::cout << "configure error\n";
     return -1;
   }
-
-  int rate = 44100;
-  unsigned exact_rate;
-  int dir;
-  int periods = 2;
-  snd_pcm_uframes_t periodsize = 8192;
-  int num_frames;
 
   if (snd_pcm_hw_params_set_access (pcm_handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
     std::cout << "error setting access\n";
@@ -70,16 +74,6 @@ int main (int argc, char *argv[]) {
     std::cout << "error setting hw params\n";
     return(-1);
   }
-
-  unsigned char *data;
-//  void *data;
-
-//  snd_pcm_sframes_t snd_pcm_writei(pcm_handle, data, num_frames);
-//  snd_pcm_sframes_t i = snd_pcm_writen(pcm_handle, (void **)&data, num_frames);
-  
-  int pcmreturn, l1, l2;
-  short s1, s2;
-  int frames;
 
   data = (unsigned char *)malloc(periodsize);
   frames = periodsize >> 2;

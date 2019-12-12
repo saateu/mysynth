@@ -76,9 +76,9 @@ int main (int argc, char *argv[]) {
   data = (unsigned char *)malloc(periodsize);
   frames = periodsize >> 2;
   for(l1 = 0; l1 < 100; l1++) {
-    for(l2 = 0; l2 < num_frames; l2++) {
-      s1 = (l2 % 128) * 100 - 5000;  
-      s2 = (l2 % 256) * 100 - 5000;  
+    for(l2 = 0; l2 < frames; l2++) {
+      s1 = (l2 % 128) * 100 - 5000;
+      s2 = (l2 % 256) * 100 - 5000;
       data[4*l2] = (unsigned char)s1;
       data[4*l2+1] = s1 >> 8;
       data[4*l2+2] = (unsigned char)s2;

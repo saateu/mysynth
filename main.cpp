@@ -4,7 +4,7 @@
 
 int main (int argc, char *argv[]) {
   int rate = 44100;
-  int hz = 600;
+  int hz = 440;
   unsigned exact_rate;
   int periods = 4;
   int num_frames;
@@ -22,6 +22,8 @@ int main (int argc, char *argv[]) {
   snd_pcm_uframes_t bufsize = periodsize * periods;
 
   std::cout << "Start my synth\n\n";
+
+  printf ("hz = %d\n", hz);
   printf ("periodsize = %lu\n", periodsize);
   printf ("bufsize = %lu\n", bufsize);
 
@@ -97,6 +99,17 @@ int main (int argc, char *argv[]) {
   frames = periodsize;
 
   printf ("frames=%d\n", frames);
+
+  int i;
+
+  for (i = 0; i <= frames * 2 + 3; i+=2) {
+    data[i] = sin (2.0 * M_PI * i * hz / rate); 
+    data[i+1] = data[i];
+  }
+
+  for (i-=10; i <= frames * 2 + 3; i++ )
+    printf ("tail data[%d] = %f\n", i, data[i]);
+
   for(l1 = 0; l1 < 100; l1++) {
     printf ("l1 = %d\n", l1);
 /*
@@ -109,14 +122,6 @@ int main (int argc, char *argv[]) {
       data[4*l2+3] = s2 >> 8;
     }
 */
-    int i;
-    for (i = 0; i <= frames * 2; i+=2) {
-      data[i] = sin (2.0 * M_PI * i * hz / rate); 
-      data[i+1] = data[i];
-//      printf ("data[%d] = %f\n", i, data[i]);
-    }
-//    printf ("i = %d\n", i);
-
     while ((snd_pcm_writei(pcm_handle, data, frames)) < 0) {
       snd_pcm_prepare(pcm_handle);
       fprintf(stderr, "<<<<<<<<<<<<<<< Buffer Underrun >>>>>>>>>>>>>>>\n");

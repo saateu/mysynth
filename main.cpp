@@ -11,9 +11,9 @@
 #define MODE_FLOAT true
 #define DEBUG false
 
-int init_alsa (snd_pcm_t *pcm_handle, snd_pcm_uframes_t periodsize, int rate) {
+int init_alsa (snd_pcm_t *pcm_handle, snd_pcm_uframes_t periodsize,
+    int periods,int rate) {
   snd_pcm_hw_params_t *hwparams;
-  int periods = PERIODS;
   snd_pcm_uframes_t bufsize = periodsize * periods;
 
   snd_pcm_hw_params_alloca (&hwparams);
@@ -94,6 +94,7 @@ int main (int argc, char *argv[]) {
   char pcm_name[64] = PCM_NAME;
   int rate = SAMPLING_RATE;
   int hz = HELZ;
+  int periods = PERIODS;
   snd_pcm_t *pcm_handle;
   snd_pcm_uframes_t periodsize = PERIOD_SIZE;
   snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
@@ -103,7 +104,10 @@ int main (int argc, char *argv[]) {
 #endif
   std::cout << "\nStart my synth\n\n";
   printf ("==== setting ====\n");
+  printf ("device name = %s\n", pcm_name);
+  printf ("sampling rate = %d\n", rate);
   printf ("hz = %d\n", hz);
+  printf ("periods = %d\n", periods);
   printf ("periodsize = %lu\n", periodsize);
   printf ("=================\n");
 
@@ -112,14 +116,14 @@ int main (int argc, char *argv[]) {
     return -1;
   }
 
-  if (init_alsa (pcm_handle, periodsize, rate) < 0) {
+  if (init_alsa (pcm_handle, periodsize, periods, rate) < 0) {
     std::cout << "init_alsa error\n";
     return -1;
   }
 
   populate_data (data, periodsize, hz, rate);
 
-  for(int l1 = 0; l1 < NUM_LOOP; l1++) {
+  for(int i = 0; i < NUM_LOOP; i++) {
     while ((snd_pcm_writei(pcm_handle, data, periodsize)) < 0) {
       snd_pcm_prepare(pcm_handle);
       fprintf(stderr,

@@ -4,6 +4,7 @@
 
 int main (int argc, char *argv[]) {
   int rate = 44100;
+  int hz = 600;
   unsigned exact_rate;
   int periods = 4;
   int num_frames;
@@ -79,7 +80,7 @@ int main (int argc, char *argv[]) {
     return(-1);
   }
 
-  printf ("bufsize = %d\n", bufsize);
+  printf ("bufsize = %lu\n", bufsize);
 
   if (snd_pcm_hw_params_set_periods(pcm_handle, hwparams, periods, 0) < 0) {
     std::cout << "error setting periods\n";
@@ -110,7 +111,7 @@ int main (int argc, char *argv[]) {
 */
     int i;
     for (i = 0; i <= frames * 2; i+=2) {
-      data[i] = sin (2.0 * M_PI * i * 440 / rate); 
+      data[i] = sin (2.0 * M_PI * i * hz / rate); 
       data[i+1] = data[i];
 //      printf ("data[%d] = %f\n", i, data[i]);
     }

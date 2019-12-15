@@ -1,24 +1,28 @@
 #include <iostream>
+#include <math.h>
 #include <alsa/asoundlib.h>
 
 int main (int argc, char *argv[]) {
   int rate = 44100;
   unsigned exact_rate;
-  int periods = 2;
+  int periods = 1;
   int num_frames;
-  unsigned char *data;
+//  unsigned char *data;
+  float *data;
   int l1, l2;
   short s1, s2;
   int frames;
-  char *pcm_name;
+  char pcm_name[64] = "default";
   snd_pcm_t *pcm_handle; 
   snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
   snd_pcm_hw_params_t *hwparams;
-  snd_pcm_uframes_t periodsize = 8192;
+  snd_pcm_uframes_t periodsize = 8192 * 32;
 
+  printf ("periodsize = %d\n", periodsize);
   std::cout << "Start my synth\n";
 
-  pcm_name = argv[1];
+//  pcm_name = argv[1];
+//  pcm_name = "default";
 
   snd_pcm_hw_params_alloca (&hwparams);
 
@@ -37,8 +41,12 @@ int main (int argc, char *argv[]) {
     return -1;
   }
 
-  if (snd_pcm_hw_params_set_format (pcm_handle, hwparams, SND_PCM_FORMAT_S16_LE) < 0) {
+//  if (snd_pcm_hw_params_set_format (pcm_handle, hwparams, SND_PCM_FORMAT_S16_LE) < 0) {
+  int r = snd_pcm_hw_params_set_format (pcm_handle, hwparams, SND_PCM_FORMAT_FLOAT);
+//  if (snd_pcm_hw_params_set_format (pcm_handle, hwparams, SND_PCM_FORMAT_FLOAT_LE) < 0) {
+  if (r < 0) {
     std::cout << "error setting format\n";
+    std::cout << "ret = " << r;
     return -1;
   }
 
@@ -57,13 +65,15 @@ int main (int argc, char *argv[]) {
     std::cout << "error setting channels\n";
     return -1;
   }
-
+/*
   if (snd_pcm_hw_params_set_periods(pcm_handle, hwparams, periods, 0) < 0) {
     std::cout << "error setting periods\n";
     return -1;
   }
+*/
 
   if (snd_pcm_hw_params_set_buffer_size(pcm_handle, hwparams, (periodsize * periods)>>2) < 0) {
+//  if (snd_pcm_hw_params_set_buffer_size(pcm_handle, hwparams, (periodsize * periods)) < 0) {
     std::cout << "error setting buffersize\n";
     return(-1);
   }
@@ -73,9 +83,10 @@ int main (int argc, char *argv[]) {
     return(-1);
   }
 
-  data = (unsigned char *)malloc(periodsize);
+  data = (float *)malloc(periodsize * 4);
   frames = periodsize >> 2;
-  for(l1 = 0; l1 < 100; l1++) {
+  for(l1 = 0; l1 < 100000; l1++) {
+/*
     for(l2 = 0; l2 < frames; l2++) {
       s1 = (l2 % 128) * 100 - 5000;
       s2 = (l2 % 256) * 100 - 5000;
@@ -84,6 +95,11 @@ int main (int argc, char *argv[]) {
       data[4*l2+2] = (unsigned char)s2;
       data[4*l2+3] = s2 >> 8;
     }
+*/
+    for (int i = 0; i < frames; i++) {
+      data[i] = sin (2.0 * M_PI * i * 440 / rate); 
+    }
+
     while ((snd_pcm_writei(pcm_handle, data, frames)) < 0) {
       snd_pcm_prepare(pcm_handle);
       fprintf(stderr, "<<<<<<<<<<<<<<< Buffer Underrun >>>>>>>>>>>>>>>\n");

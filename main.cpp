@@ -64,6 +64,32 @@ int init_alsa (snd_pcm_t *pcm_handle, snd_pcm_uframes_t periodsize, int rate) {
   }
 }
 
+void populate_data (void *data, snd_pcm_uframes_t periodsize, int hz, int rate) {
+  int i;
+#if MODE_FLOAT
+  float *d = (float *)data;
+  for (i = 0; i <= periodsize * 2 + 3; i+=2) {
+    d[i] = sin (2.0 * M_PI * i * hz / rate);
+    d[i+1] = d[i];
+  }
+#else
+  unsigned char *d = (unsigned char *)data;
+  for(int l2 = 0; l2 < periodsize; l2++) {
+    int s1, s2;
+    s1 = (l2 % 128) * 100 - 5000;
+    s2 = (l2 % 256) * 100 - 5000;
+    data[4*l2] = (unsigned char)s1;
+    data[4*l2+1] = s1 >> 8;
+    data[4*l2+2] = (unsigned char)s2;
+    data[4*l2+3] = s2 >> 8;
+  }
+#endif
+#if DEBUG
+  for (i -= 10; i <= periodsize * 2 + 3; i++ )
+    printf ("tail data[%d] = %f\n", i, data[i]);
+#endif
+}
+
 int main (int argc, char *argv[]) {
   char pcm_name[64] = PCM_NAME;
   int rate = SAMPLING_RATE;
@@ -71,14 +97,11 @@ int main (int argc, char *argv[]) {
   snd_pcm_t *pcm_handle;
   snd_pcm_uframes_t periodsize = PERIOD_SIZE;
   snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
-  int i;
 #if MODE_FLOAT
   float *data = (float *)malloc(periodsize * sizeof (float) * 2);
 #else
 #endif
-
   std::cout << "\nStart my synth\n\n";
-
   printf ("==== setting ====\n");
   printf ("hz = %d\n", hz);
   printf ("periodsize = %lu\n", periodsize);
@@ -94,27 +117,8 @@ int main (int argc, char *argv[]) {
     return -1;
   }
 
-#if MODE_FLOAT
-  for (i = 0; i <= periodsize * 2 + 3; i+=2) {
-    data[i] = sin (2.0 * M_PI * i * hz / rate); 
-    data[i+1] = data[i];
-  }
-#else
-  for(int l2 = 0; l2 < periodsize; l2++) {
-    int s1, s2;
-    s1 = (l2 % 128) * 100 - 5000;
-    s2 = (l2 % 256) * 100 - 5000;
-    data[4*l2] = (unsigned char)s1;
-    data[4*l2+1] = s1 >> 8;
-    data[4*l2+2] = (unsigned char)s2;
-    data[4*l2+3] = s2 >> 8;
-  }
-#endif
+  populate_data (data, periodsize, hz, rate);
 
-#if DEBUG
-  for (i -= 10; i <= periodsize * 2 + 3; i++ )
-    printf ("tail data[%d] = %f\n", i, data[i]);
-#endif
   for(int l1 = 0; l1 < NUM_LOOP; l1++) {
     while ((snd_pcm_writei(pcm_handle, data, periodsize)) < 0) {
       snd_pcm_prepare(pcm_handle);

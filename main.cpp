@@ -11,36 +11,12 @@
 #define MODE_FLOAT true
 #define DEBUG false
 
-int main (int argc, char *argv[]) {
-  int rate = SAMPLING_RATE;
-  int hz = HELZ;
-  int periods = PERIODS;
-  char pcm_name[64] = PCM_NAME;
-  snd_pcm_uframes_t periodsize = PERIOD_SIZE;
-  snd_pcm_t *pcm_handle; 
-  snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
+int init_alsa (snd_pcm_t *pcm_handle, snd_pcm_uframes_t periodsize, int rate) {
   snd_pcm_hw_params_t *hwparams;
+  int periods = PERIODS;
   snd_pcm_uframes_t bufsize = periodsize * periods;
-  int i;
-#if MODE_FLOAT
-  float *data = (float *)malloc(periodsize * sizeof (float) * 2);
-#else
-#endif
-
-  std::cout << "\nStart my synth\n\n";
-
-  printf ("==== setting ====\n");
-  printf ("hz = %d\n", hz);
-  printf ("periodsize = %lu\n", periodsize);
-  printf ("bufsize = %lu\n", bufsize);
-  printf ("=================\n");
 
   snd_pcm_hw_params_alloca (&hwparams);
-
-  if (snd_pcm_open (&pcm_handle, pcm_name, stream, 0) < 0) {
-    std::cout << "open error\n";
-    return -1;
-  }
 
   if (snd_pcm_hw_params_any (pcm_handle, hwparams) < 0) {
     std::cout << "configure error\n";
@@ -85,6 +61,37 @@ int main (int argc, char *argv[]) {
   if (snd_pcm_hw_params(pcm_handle, hwparams) < 0) {
     std::cout << "error setting hw params\n";
     return(-1);
+  }
+}
+
+int main (int argc, char *argv[]) {
+  char pcm_name[64] = PCM_NAME;
+  int rate = SAMPLING_RATE;
+  int hz = HELZ;
+  snd_pcm_t *pcm_handle;
+  snd_pcm_uframes_t periodsize = PERIOD_SIZE;
+  snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
+  int i;
+#if MODE_FLOAT
+  float *data = (float *)malloc(periodsize * sizeof (float) * 2);
+#else
+#endif
+
+  std::cout << "\nStart my synth\n\n";
+
+  printf ("==== setting ====\n");
+  printf ("hz = %d\n", hz);
+  printf ("periodsize = %lu\n", periodsize);
+  printf ("=================\n");
+
+  if (snd_pcm_open (&pcm_handle, pcm_name, stream, 0) < 0) {
+    std::cout << "open error\n";
+    return -1;
+  }
+
+  if (init_alsa (pcm_handle, periodsize, rate) < 0) {
+    std::cout << "init_alsa error\n";
+    return -1;
   }
 
 #if MODE_FLOAT

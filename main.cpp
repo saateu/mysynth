@@ -5,7 +5,7 @@
 int main (int argc, char *argv[]) {
   int rate = 44100;
   unsigned exact_rate;
-  int periods = 1;
+  int periods = 4;
   int num_frames;
 //  unsigned char *data;
   float *data;
@@ -16,10 +16,13 @@ int main (int argc, char *argv[]) {
   snd_pcm_t *pcm_handle; 
   snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
   snd_pcm_hw_params_t *hwparams;
+//  snd_pcm_uframes_t periodsize = 8192 * 16;
   snd_pcm_uframes_t periodsize = 8192 * 32;
+  snd_pcm_uframes_t bufsize = periodsize * periods;
 
-  printf ("periodsize = %d\n", periodsize);
-  std::cout << "Start my synth\n";
+  std::cout << "Start my synth\n\n";
+  printf ("periodsize = %lu\n", periodsize);
+  printf ("bufsize = %lu\n", bufsize);
 
 //  pcm_name = argv[1];
 //  pcm_name = "default";
@@ -65,17 +68,22 @@ int main (int argc, char *argv[]) {
     std::cout << "error setting channels\n";
     return -1;
   }
-/*
+
+  snd_pcm_uframes_t     buffer_size_max;
+  snd_pcm_hw_params_get_buffer_size_max(hwparams, &buffer_size_max);
+  printf ("bsm = %ld\n", buffer_size_max);
+
+  // doesn't work with snd_pcm_hw_params_set_buffer_size(). But don't know reason.
+  if (snd_pcm_hw_params_set_buffer_size_near(pcm_handle, hwparams, &bufsize) < 0) {
+    std::cout << "error setting buffersize\n";
+    return(-1);
+  }
+
+  printf ("bufsize = %d\n", bufsize);
+
   if (snd_pcm_hw_params_set_periods(pcm_handle, hwparams, periods, 0) < 0) {
     std::cout << "error setting periods\n";
     return -1;
-  }
-*/
-
-  if (snd_pcm_hw_params_set_buffer_size(pcm_handle, hwparams, (periodsize * periods)>>2) < 0) {
-//  if (snd_pcm_hw_params_set_buffer_size(pcm_handle, hwparams, (periodsize * periods)) < 0) {
-    std::cout << "error setting buffersize\n";
-    return(-1);
   }
 
   if (snd_pcm_hw_params(pcm_handle, hwparams) < 0) {
@@ -83,9 +91,13 @@ int main (int argc, char *argv[]) {
     return(-1);
   }
 
-  data = (float *)malloc(periodsize * 4);
-  frames = periodsize >> 2;
-  for(l1 = 0; l1 < 100000; l1++) {
+  data = (float *)malloc(periodsize * sizeof (float) * 2);
+//  frames = periodsize >> 2;
+  frames = periodsize;
+
+  printf ("frames=%d\n", frames);
+  for(l1 = 0; l1 < 100; l1++) {
+    printf ("l1 = %d\n", l1);
 /*
     for(l2 = 0; l2 < frames; l2++) {
       s1 = (l2 % 128) * 100 - 5000;
@@ -96,9 +108,13 @@ int main (int argc, char *argv[]) {
       data[4*l2+3] = s2 >> 8;
     }
 */
-    for (int i = 0; i < frames; i++) {
+    int i;
+    for (i = 0; i <= frames * 2; i+=2) {
       data[i] = sin (2.0 * M_PI * i * 440 / rate); 
+      data[i+1] = data[i];
+//      printf ("data[%d] = %f\n", i, data[i]);
     }
+//    printf ("i = %d\n", i);
 
     while ((snd_pcm_writei(pcm_handle, data, frames)) < 0) {
       snd_pcm_prepare(pcm_handle);

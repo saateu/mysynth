@@ -3,6 +3,7 @@
 #include <alsa/asoundlib.h>
 
 #define SAMPLING_RATE 44100
+#define PCM_FORMAT SND_PCM_FORMAT_FLOAT
 #define HELZ 440
 #define PERIODS 4
 #define PCM_NAME "default"
@@ -29,8 +30,7 @@ int init_alsa (snd_pcm_t *pcm_handle, snd_pcm_uframes_t periodsize,
     return -1;
   }
 
-  if (snd_pcm_hw_params_set_format (pcm_handle, hwparams,
-      SND_PCM_FORMAT_FLOAT) < 0) {
+  if (snd_pcm_hw_params_set_format (pcm_handle, hwparams, PCM_FORMAT) < 0) {
     std::cout << "error setting format\n";
     return -1;
   }

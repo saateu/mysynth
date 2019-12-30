@@ -1,0 +1,12 @@
+build
+
+$ g++ -o hello main.cpp -lasound
+
+$ gcc hello3.c -o hello3 `pkg-config --cflags --libs gtk+-2.0`
+ 
+$ g++ -o mysynth main.cpp -lasound `pkg-config --cflags --libs gtk+-2.0`
+----------------
+
+command
+
+$ ./a.out hw:0,0

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <math.h>
 #include <alsa/asoundlib.h>
+#include <gtk/gtk.h>
 
 #define SAMPLING_RATE 44100
 #define PCM_FORMAT SND_PCM_FORMAT_FLOAT
@@ -90,6 +91,36 @@ void populate_data (void *data, snd_pcm_uframes_t periodsize, int hz, int rate) 
 #endif
 }
 
+static void start ( GtkWidget *widget,
+                   gpointer   data )
+{
+    g_print ("Start My Synth\n");
+}
+
+static gboolean delete_event( GtkWidget *widget,
+                              GdkEvent  *event,
+                              gpointer   data )
+{
+    /* If you return FALSE in the "delete-event" signal handler,
+     * GTK will emit the "destroy" signal. Returning TRUE means
+     * you don't want the window to be destroyed.
+     * This is useful for popping up 'are you sure you want to quit?'
+     * type dialogs. */
+
+    g_print ("delete event occurred\n");
+
+    /* Change TRUE to FALSE and the main window will be destroyed with
+     * a "delete-event". */
+
+    return FALSE;
+}
+
+static void destroy( GtkWidget *widget,
+                     gpointer   data )
+{
+    gtk_main_quit ();
+}
+
 int main (int argc, char *argv[]) {
   char pcm_name[64] = PCM_NAME;
   int rate = SAMPLING_RATE;
@@ -102,6 +133,10 @@ int main (int argc, char *argv[]) {
   float *data = (float *)malloc(periodsize * sizeof (float) * 2);
 #else
 #endif
+  GtkWidget *window;
+  GtkWidget *button;
+  GtkWidget *hbox;
+
   std::cout << "\nStart my synth\n\n";
   printf ("==== setting ====\n");
   printf ("device name = %s\n", pcm_name);
@@ -122,6 +157,25 @@ int main (int argc, char *argv[]) {
   }
 
   populate_data (data, periodsize, hz, rate);
+
+  gtk_init (&argc, &argv);
+
+  window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  g_signal_connect (window, "delete-event",
+                    G_CALLBACK (delete_event), NULL);
+  g_signal_connect (window, "destroy",
+                    G_CALLBACK (destroy), NULL);
+  gtk_container_set_border_width (GTK_CONTAINER (window), 100);
+  button = gtk_button_new_with_label ("Start My Synth");
+  g_signal_connect (button, "clicked",
+                    G_CALLBACK (start), NULL);
+  g_signal_connect_swapped (button, "clicked",
+                    G_CALLBACK (gtk_widget_destroy),
+                    window);
+  gtk_container_add (GTK_CONTAINER (window), button);
+  gtk_widget_show (button);
+  gtk_widget_show (window);
+  gtk_main ();
 
   for(int i = 0; i < NUM_LOOP; i++) {
     while ((snd_pcm_writei(pcm_handle, data, periodsize)) < 0) {

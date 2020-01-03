@@ -8,10 +8,16 @@
 #define HELZ 440
 #define PERIODS 4
 #define PCM_NAME "default"
-#define PERIOD_SIZE 262144
-#define NUM_LOOP 100
+#define PERIOD_SIZE 262144 / 4
+#define NUM_LOOP 4
 #define MODE_FLOAT true
 #define DEBUG false
+
+typedef struct {
+  snd_pcm_t *pcm_handle;
+  void *data;  
+  snd_pcm_uframes_t periodsize;
+} pcm_data;
 
 int init_alsa (snd_pcm_t *pcm_handle, snd_pcm_uframes_t periodsize,
     int periods,int rate) {
@@ -94,7 +100,18 @@ void populate_data (void *data, snd_pcm_uframes_t periodsize, int hz, int rate) 
 static void start ( GtkWidget *widget,
                    gpointer   data )
 {
-    g_print ("Start My Synth\n");
+  pcm_data *pdata = (pcm_data *)data;
+//  g_print ("Start My Synth\n");
+  
+  for(int i = 0; i < NUM_LOOP; i++) {
+    while ((snd_pcm_writei(pdata->pcm_handle, pdata->data,
+        pdata->periodsize)) < 0) {
+//      snd_pcm_prepare(pdata->pcm_handle);
+      fprintf(stderr,
+          "<<<<<<<<<<<<<<< Buffer Underrun >>>>>>>>>>>>>>>\n");
+    }
+    printf ("a\n");
+  }
 }
 
 static gboolean delete_event( GtkWidget *widget,
@@ -112,7 +129,7 @@ static void destroy( GtkWidget *widget,
     gtk_main_quit ();
 }
 
-static int init_gui ()
+static int init_gui (pcm_data *pdata)
 {
   GtkWidget *window;
   GtkWidget *button;
@@ -126,10 +143,10 @@ static int init_gui ()
   gtk_container_set_border_width (GTK_CONTAINER (window), 100);
   button = gtk_button_new_with_label ("Start My Synth");
   g_signal_connect (button, "clicked",
-                    G_CALLBACK (start), NULL);
-  g_signal_connect_swapped (button, "clicked",
-                    G_CALLBACK (gtk_widget_destroy),
-                    window);
+                    G_CALLBACK (start), pdata);
+//  g_signal_connect_swapped (button, "clicked",
+//                    G_CALLBACK (gtk_widget_destroy),
+//                    window);
   gtk_container_add (GTK_CONTAINER (window), button);
   gtk_widget_show (button);
   gtk_widget_show (window);
@@ -148,7 +165,9 @@ int main (int argc, char *argv[]) {
   float *data = (float *)malloc(periodsize * sizeof (float) * 2);
 #else
 #endif
-  std::cout << "\nStart my synth\n\n";
+  pcm_data pdata;
+
+  std::cout << "\nStarts my synth\n\n";
   printf ("==== setting ====\n");
   printf ("device name = %s\n", pcm_name);
   printf ("sampling rate = %d\n", rate);
@@ -157,7 +176,8 @@ int main (int argc, char *argv[]) {
   printf ("periodsize = %lu\n", periodsize);
   printf ("=================\n");
 
-  if (snd_pcm_open (&pcm_handle, pcm_name, stream, 0) < 0) {
+  if (snd_pcm_open (&pcm_handle, pcm_name, stream, SND_PCM_NONBLOCK) < 0) {
+//  if (snd_pcm_open (&pcm_handle, pcm_name, stream, 0) < 0) {
     std::cout << "open error\n";
     return -1;
   }
@@ -169,16 +189,12 @@ int main (int argc, char *argv[]) {
 
   populate_data (data, periodsize, hz, rate);
 
+  pdata.pcm_handle = pcm_handle;
+  pdata.periodsize = periodsize;
+  pdata.data = data;
+  
   gtk_init (&argc, &argv);
-  init_gui ();
-
-  for(int i = 0; i < NUM_LOOP; i++) {
-    while ((snd_pcm_writei(pcm_handle, data, periodsize)) < 0) {
-      snd_pcm_prepare(pcm_handle);
-      fprintf(stderr,
-          "<<<<<<<<<<<<<<< Buffer Underrun >>>>>>>>>>>>>>>\n");
-    }
-  }
+  init_gui (&pdata);
 
   free (data);
   snd_pcm_drop(pcm_handle);
